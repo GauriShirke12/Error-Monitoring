@@ -1,0 +1,26 @@
+{
+  "name": "@error-monitor/sdk-core",
+  "version": "0.1.0",
+  "description": "Core logic for the Error Monitor SDK",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "types"
+  ],
+  "types": "types/index.d.ts",
+  "scripts": {
+    "build": "node ./scripts/build.js",
+    "test": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js"
+  },
+  "type": "module",
+  "dependencies": {
+    "nanoid": "^5.0.7"
+  }
+}

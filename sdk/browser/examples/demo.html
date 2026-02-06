@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Error Monitor Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; }
+    button { padding: 0.5rem 1rem; font-size: 1rem; }
+    pre { background: #f4f4f4; padding: 1rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Error Monitor Browser SDK Test</h1>
+  <p>Open the console to see captured events.</p>
+  <button id="trigger">Throw Error</button>
+  <script src="../dist/error-monitor.browser.js"></script>
+  <script>
+    const monitor = ErrorMonitor.default;
+    monitor.init({
+      apiKey: "demo-key",
+      apiUrl: "https://example.com/errors",
+      environment: "development",
+      sampleRate: 1
+    });
+
+    monitor.addBreadcrumb({ message: "App initialized" });
+    monitor.setUser({ id: "user-1", email: "user@example.com" });
+
+    document.getElementById("trigger").addEventListener("click", () => {
+      try {
+        throw new Error("demo crash");
+      } catch (error) {
+        const event = monitor.captureError(error, {
+          tags: { feature: "demo" },
+          breadcrumbs: [{ message: "Button clicked" }]
+        });
+        console.log("Captured event", event);
+      }
+    });
+  </script>
+</body>
+</html>

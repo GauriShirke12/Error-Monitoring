@@ -1,0 +1,26 @@
+# Node and build artifacts
+node_modules/
+package-lock.json
+
+# Environment
+.env
+*.env
+.env.*
+server/scripts/alert-test-config.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage & outputs
+coverage/
+dist/
+build/
+.tmp/

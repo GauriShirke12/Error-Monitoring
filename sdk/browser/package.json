@@ -1,0 +1,26 @@
+{
+  "name": "@error-monitor/sdk-browser",
+  "version": "0.1.0",
+  "description": "Browser bundle for the Error Monitor SDK",
+  "main": "dist/error-monitor.browser.js",
+  "module": "dist/error-monitor.browser.js",
+  "browser": "dist/error-monitor.browser.js",
+  "exports": {
+    ".": {
+      "require": "./dist/error-monitor.browser.cjs",
+      "import": "./dist/error-monitor.browser.js"
+    }
+  },
+  "files": [
+    "dist",
+    "types"
+  ],
+  "types": "types/index.d.ts",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "test": "node ../node_modules/jest/bin/jest.js --config ./jest.config.cjs"
+  },
+  "dependencies": {
+    "@error-monitor/sdk-core": "0.1.0"
+  }
+}

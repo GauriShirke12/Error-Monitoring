@@ -1,0 +1,25 @@
+{
+  "name": "@error-monitor/sdk-node",
+  "version": "0.1.0",
+  "description": "Node.js entry point for the Error Monitor SDK",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "types"
+  ],
+  "types": "types/index.d.ts",
+  "scripts": {
+    "build": "node ./scripts/build.js",
+    "test": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --config ./jest.config.cjs"
+  },
+  "dependencies": {
+    "@error-monitor/sdk-core": "0.1.0"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "apiKey": "replace-with-project-api-key",
+  "ruleId": "replace-with-alert-rule-id",
+  "triggerPayload": {
+    "environment": "production",
+    "fingerprint": "checkout-spike-001",
+    "severity": "high",
+    "windowCount": 230,
+    "windowMinutes": 5,
+    "baselineCount": 40,
+    "baselineMinutes": 30,
+    "occurrences": 230,
+    "userSegments": ["premium"],
+    "sourceFile": "services/checkout.js",
+    "lastDetectedAt": "2026-02-05T05:08:59.000Z",
+    "links": {
+      "investigate": "https://dashboard.example.com/errors/checkout-spike",
+      "acknowledge": "https://dashboard.example.com/errors/checkout-spike/ack"
+    }
+  },
+  "missingFingerprintPayload": {
+    "environment": "production",
+    "severity": "high",
+    "windowCount": 120,
+    "windowMinutes": 5
+  }
+}

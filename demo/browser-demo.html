@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Error Monitor Browser Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; padding: 24px; }
+    button { margin: 8px 8px 8px 0; padding: 10px 14px; background: #6366f1; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #4f46e5; }
+    .panel { background: #1e293b; padding: 16px; border-radius: 10px; margin-bottom: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+    label { display: inline-flex; align-items: center; gap: 8px; }
+    input[type="text"] { width: 320px; padding: 8px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; }
+    code { background: #0f172a; padding: 2px 6px; border-radius: 4px; }
+  </style>
+  <script src="../sdk/browser/dist/error-monitor.browser.js"></script>
+</head>
+<body>
+  <div class="panel">
+    <h2>Browser SDK Demo</h2>
+    <p>Set your API key, then trigger errors. Auto-capture is wired; captured events are sent to the ingestion API.</p>
+    <label>API Key: <input id="apiKey" type="text" placeholder="Paste X-Api-Key" /></label>
+    <label>API URL: <input id="apiUrl" type="text" value="http://localhost:4000/api/errors" /></label>
+    <label><input id="offline" type="checkbox" /> Force offline (queue locally)</label>
+  </div>
+
+  <div class="panel">
+    <button id="btnThrow">Throw JS Error</button>
+    <button id="btnPromise">Unhandled Promise</button>
+    <button id="btnHandled">Capture Handled Error</button>
+    <button id="btnFlush">Flush Queue</button>
+    <div id="status"></div>
+  </div>
+
+  <script type="module">
+    const statusEl = document.getElementById("status");
+    const queue = [];
+
+    const apiKeyInput = document.getElementById("apiKey");
+    const apiUrlInput = document.getElementById("apiUrl");
+    const offlineToggle = document.getElementById("offline");
+
+    const monitor = window.ErrorMonitor.init({
+      apiKey: "browser-demo",
+      apiUrl: apiUrlInput.value,
+      environment: "browser-local",
+      autoCapture: { errors: true, promiseRejections: true },
+      tags: { surface: "browser-demo" },
+      maxBreadcrumbs: 20
+    });
+
+    const originalCapture = monitor.captureError.bind(monitor);
+    monitor.captureError = function patchedCapture(error, context) {
+      const event = originalCapture(error, context);
+      if (event) {
+        enqueueForSend(event);
+      }
+      return event;
+    };
+
+    function toStackFrame(frame) {
+      if (!frame || typeof frame !== "object") {
+        return { file: "unknown", line: null, column: null, function: null, inApp: false };
+      }
+      const file = frame.fileName || frame.raw || frame.file || "unknown";
+      return {
+        file,
+        line: frame.lineNumber ?? frame.line ?? null,
+        column: frame.columnNumber ?? frame.column ?? null,
+        function: frame.functionName || frame.function || null,
+        inApp: Boolean(file && file.includes("src"))
+      };
+    }
+
+    function buildPayload(event) {
+      const stackFrames = Array.isArray(event.error?.stacktrace) && event.error.stacktrace.length
+        ? event.error.stacktrace.map(toStackFrame)
+        : [{ file: "unknown", line: null, column: null, function: null, inApp: false }];
+
+      return {
+        message: `${event.error?.name || "Error"}: ${event.error?.message || "Unknown"}`,
+        environment: event.environment,
+        stackTrace: stackFrames,
+        userContext: event.user || {},
+        metadata: {
+          tags: event.tags || {},
+          context: event.context || {},
+          breadcrumbs: event.breadcrumbs || []
+        },
+        timestamp: event.timestamp
+      };
+    }
+
+    function isOffline() {
+      return offlineToggle.checked || navigator.onLine === false;
+    }
+
+    async function sendEvent(event) {
+      const apiKey = apiKeyInput.value.trim();
+      if (!apiKey) {
+        logStatus("Missing API key", true);
+        return;
+      }
+      const apiUrl = apiUrlInput.value.trim();
+      if (!apiUrl) {
+        logStatus("Missing API URL", true);
+        return;
+      }
+
+      const payload = buildPayload(event);
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": apiKey
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.status === 201 || response.status === 202) {
+        logStatus(`Sent event (${payload.message})`);
+      } else {
+        const body = await response.text();
+        throw new Error(`Ingest failed (${response.status}): ${body}`);
+      }
+    }
+
+    function enqueueForSend(event) {
+      if (isOffline()) {
+        queue.push(event);
+        logStatus(`Queued (offline) - ${event.error?.message}`);
+        return;
+      }
+      sendEvent(event).catch((error) => logStatus(error.message, true));
+    }
+
+    function flushQueue() {
+      if (!queue.length) {
+        logStatus("Queue empty");
+        return;
+      }
+      const pending = queue.splice(0, queue.length);
+      logStatus(`Flushing ${pending.length} queued events...`);
+      pending.forEach((event) => sendEvent(event).catch((error) => logStatus(error.message, true)));
+    }
+
+    offlineToggle.addEventListener("change", () => {
+      if (!offlineToggle.checked) {
+        flushQueue();
+      }
+    });
+
+    document.getElementById("btnThrow").addEventListener("click", () => {
+      throw new Error("Browser demo crash");
+    });
+
+    document.getElementById("btnPromise").addEventListener("click", () => {
+      Promise.reject(new Error("Unhandled promise from demo"));
+    });
+
+    document.getElementById("btnHandled").addEventListener("click", () => {
+      try {
+        JSON.parse("not-json");
+      } catch (error) {
+        monitor.captureError(error, {
+          tags: { handled: true },
+          breadcrumbs: [{ message: "handled click" }]
+        });
+      }
+    });
+
+    document.getElementById("btnFlush").addEventListener("click", flushQueue);
+
+    function logStatus(message, isError = false) {
+      const time = new Date().toLocaleTimeString();
+      statusEl.textContent = `[${time}] ${message}`;
+      statusEl.style.color = isError ? "#f472b6" : "#a5b4fc";
+      console.log(message);
+    }
+
+    logStatus("Ready. Paste API key and trigger errors.");
+  </script>
+</body>
+</html>
