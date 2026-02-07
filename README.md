@@ -140,7 +140,7 @@ This project solves that exact problem by:
 ## 🚀 Getting Started
 
 ### 1️⃣ Clone Repository
-```bash
+
 git clone https://github.com/your-username/error-monitoring-platform.git
 cd error-monitoring-platform
 
@@ -148,7 +148,7 @@ cd error-monitoring-platform
 ## ⚙️ Installation & Setup
 
 ### 2️⃣ Install Dependencies
-```bash
+
 npm install
 
 ---
@@ -170,3 +170,11 @@ npm run dev
 The server will start at:
 
 http://localhost:4000
+
+---
+
+## 👨‍💻 Author
+
+Gauri Shirke
+
+---
